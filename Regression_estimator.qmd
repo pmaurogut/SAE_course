@@ -424,6 +424,7 @@ We have some outliers but we will accept this model to see how we obtain estimat
 # The prediction for the mean in the forest is obtained using the coefficients of the model fitted with the sample
 predicted<-mean(predict(model,example3))
 predicted
+stand_1 <- 
 ```
 
 To assess the uncertainty of our estimate we consider alternative sampled and unsampled values following the distribution dictated by the model. We repeat the process of fitting the model and computing predictions for all population units 1000 times. There are some differences with the regression estimator:
