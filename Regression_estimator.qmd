@@ -411,7 +411,7 @@ unsampled <- example3[!is.na(example3$volume),]
 Now using the sampled part we are going to fit a linear
 
 ```{r}
-model <- lm(volume~p95,data=sampled)
+model <- lm(volume~p95+I(p95^2),data=sampled)
 summary(model)
 sigma_e <- summary(model)$sigma
 sigma_e
@@ -424,12 +424,11 @@ We have some outliers but we will accept this model to see how we obtain estimat
 # The prediction for the mean in the forest is obtained using the coefficients of the model fitted with the sample
 predicted<-mean(predict(model,example3))
 predicted
-stand_1 <- 
 ```
 
 To assess the uncertainty of our estimate we consider alternative sampled and unsampled values following the distribution dictated by the model. We repeat the process of fitting the model and computing predictions for all population units 1000 times. There are some differences with the regression estimator:
 
-1.   We are not randomizing the sample. We have some units and those remain fixed.
+1.  We are not randomizing the sample. We have some units and those remain fixed.
 
 2.  Randomness come from the model (data generating process), so we generate alternative values for the sampled and unsampled data and repeat the process in the code chunk above.
 
@@ -438,6 +437,11 @@ To assess the uncertainty of our estimate we consider alternative sampled and un
 ```{r}
 repeats <- 1000
 differences <- data.frame(rep=c(),
+                      pred_mean_forest=c(),
+                      pred_mean_stand1 = c(),
+                      pred_mean_stand2 = c(),
+                      pred_mean_stand3 = c(),
+                      mean_stand4=c(),
                       diff_mean_forest=c(),
                       diff_mean_stand1 = c(),
                       diff_mean_stand2 = c(),
@@ -480,6 +484,13 @@ for(i in 1:repeats){
   
   # store the rep and sample size
   result_reg[cont,"rep"]<-i
+  #
+  # Store the values of the mean for the forest (not the estimated mean)
+  result_reg[i,"pred_mean_forest"]<-pred_mean_forest_i
+  result_reg[i,"pred_mean_stand1"]<-pred_mean_stand1_i
+  result_reg[i,"pred_mean_stand2"]<-pred_mean_stand2_i
+  result_reg[i,"pred_mean_stand3"]<-pred_mean_stand3_i
+  result_reg[i,"pred_mean_stand4"]<-pred_mean_stand4_i
   # calculate the sample means for the forest and each stand
   result_reg[i,"diff_mean_forest"]<-mean_forest_i-pred_mean_forest_i
   result_reg[i,"diff_mean_stand1"]<-mean_stand1_i-pred_mean_stand1_i
@@ -499,6 +510,35 @@ hist(result_reg$diff_mean_stand2)
 hist(result_reg$diff_mean_stand3)
 hist(result_reg$diff_mean_stand4)
 ```
+
+These results look decent. Now we look at the model predicted values of the repetitions.
+
+```{r}
+hist(result_reg$pred_mean_forest)
+hist(result_reg$pred_mean_forest)
+hist(result_reg$pred_mean_forest)
+hist(result_reg$pred_mean_forest)
+hist(result_reg$pred_mean_forest)
+```
+
+Check the true model for volume and how the data was actually generated.
+
+```{r}
+id <- 1:1600
+x <- rep(0:39,each=40)
+y <- rep(0:39,times=40)
+stand <- (1+x%/%20) +2*(y%/%20)
+p95 <- rnorm(1600,50,10+5*stand)
+# CHECK THIS LINE
+volume <- rnorm(1600,p95+0.05*p95^2+100*stand+50,60)
+
+example3 <- data.frame(id=id,x=x,y=y,stand=stand,volume=volume, p95=p95)
+example3$volume <- ifelse(sample(1600,20)%in%example1$id,example1$volume,NA)
+
+
+```
+
+Based on the true data generating process, we would expect differences of around 100 between stands. But why are we getting values that are almost the same for all stands and for the foerst. The model has to be failing in some way. Even worse, we have analyzed the uncertainty based on the assumption that the model holds but it seems that the model we are fitting does not hold. Can we trust this model? Are we missing something?
 
 # References
 
