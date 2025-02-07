@@ -1,0 +1,11 @@
+id <- 1:1600
+x <- rep(0:39,each=40)
+y <- rep(0:39,times=40)
+stand <- (1+x%/%20) +2*(y%/%20)
+p95 <- rnorm(1600,50,10+5*stand)
+volume <- rnorm(1600,p95+0.05*p95^2+100*stand+50,60)
+example1 <- data.frame(id=id,x=x,y=y,stand=stand,volume=volume, p95=p95)
+write.csv(example1,"example1.csv",row.names=FALSE)
+write.csv(example1[,-5],"example2.csv",row.names=FALSE)
+example1$volume <- ifelse(sample(1600,20)%in%example1$id,example1$volume,NA)
+write.csv(example1,"example3.csv",row.names=FALSE)

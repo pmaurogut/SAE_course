@@ -28,7 +28,7 @@ example1$stand <- factor(example1$stand)
 ggplot(example1,aes(x=x,y=y,fill=stand)) + geom_tile()
 ggplot(example1,aes(x=x,y=y,fill=volume)) + geom_tile()
 ggplot(example1,aes(x=x,y=y,fill=p95)) + geom_tile()
-example1$volume <- rnorm(1600,0.07*example1$p95+0.0005*example1$p95^2,0.008*example1$p95)
+plot(example1$p95,example1$volume,col=example1$stand)
 ```
 
 We will start estimating the average volume in the forest and in the mean volume in each stand doing simple random sampling without replacement. Having the volume of all grid units allows us to obtain the true average volume in the forest.
@@ -49,6 +49,7 @@ print("True mean stand 3")
 true_mean_stand3
 print("True mean stand 4")
 true_mean_stand4
+range_volume <- range(example1$volume)
 
 ```
 
@@ -94,34 +95,38 @@ result$true_mean_stand4 <- true_mean_stand4
 
 ```
 
-Let's now plot our results as a function of the sample size. We will simulate a precission requierement of +- 10% in our estimates piloting discontinuous lines around the true value
+Let's now plot our results as a function of the sample size. We will simulate a precision requirement of +- 10% in our estimates piloting discontinuous lines around the true value
 
 ```{r}
 
-plot(result$sample_size,result$estimated_mean_forest,ylim=c(20,70),
+plot(result$sample_size,result$estimated_mean_forest,ylim=range_volume,
       main="Estimated means forest vs sample size")
 abline(true_mean_forest,0,col="blue")
 par(mfrow=c(2,2))
-plot(result$sample_size,result$estimated_mean_stand1,ylim=c(20,70),
+plot(result$sample_size,result$estimated_mean_stand1,ylim=range_volume,
       main="Estimated means stand 1 vs sample size")
 abline(true_mean_stand1,0,col="red")
-plot(result$sample_size,result$estimated_mean_stand2,ylim=c(20,70),
+plot(result$sample_size,result$estimated_mean_stand2,ylim=range_volume,
       main="Estimated means stand 2 vs sample size")
 abline(true_mean_stand2,0,col="green")
-plot(result$sample_size,result$estimated_mean_stand3,ylim=c(20,70),
+plot(result$sample_size,result$estimated_mean_stand3,ylim=range_volume,
       main="Estimated means stand 3 vs sample size")
 abline(true_mean_stand3,0,col="purple")
-plot(result$sample_size,result$estimated_mean_stand4,ylim=c(20,70),
+plot(result$sample_size,result$estimated_mean_stand4,ylim=range_volume,
       main="Estimated means stand 4 vs sample size")
 abline(true_mean_stand4,0,col="orange")
 
 par(mfrow=c(1,2))
-plot(result$sample_size,result$estimated_mean_forest,ylim=c(20,70),
+plot(result$sample_size,result$estimated_mean_forest,ylim=range_volume,
      main="Estimated means forest vs sample size")
 abline(true_mean_forest,0,col="blue")
-plot(result$sample_size,result$estimated_mean_stand4,ylim=c(20,70),
+abline(true_mean_forest+0.1*true_mean_stand4,0,col="blue",lty=2)
+abline(true_mean_forest-0.1*true_mean_stand4,0,col="blue",lty=2)
+plot(result$sample_size,result$estimated_mean_stand4,ylim=range_volume,
       main="Estimated means stand 4 vs sample size")
 abline(true_mean_stand4,0,col="orange")
+abline(true_mean_stand4+0.1*true_mean_stand4,0,col="orange",lty=2)
+abline(true_mean_stand4-0.1*true_mean_stand4,0,col="orange",lty=2)
 
 ```
 
@@ -152,6 +157,7 @@ for(i in 1:repeats){
     # subset the forest and obtain the sample fit using OLS (lm function)
     sampled_data_reg <- example1[my_sample_reg,]
     model_forest <- lm(volume~p95,data = sampled_data_reg)
+    # calculate the regression estimator
     media_reg_forest <- mean(predict(model_forest,example1)) + mean(model_forest$residuals)
     
     # now we will create subsamples for stands, obtain subsample fits for the stand and apply 
@@ -225,31 +231,34 @@ result_reg$true_mean_stand4 <- true_mean_stand4
 No let's plot the results
 
 ```{r}
-plot(result_reg$sample_size,result_reg$estimated_mean_forest,ylim=c(20,70),
+plot(result_reg$sample_size,result_reg$estimated_mean_forest,ylim=range_volume,
       main="Estimated means forest vs sample size")
 abline(true_mean_forest,0,col="blue")
 par(mfrow=c(2,2))
-plot(result_reg$sample_size,result_reg$estimated_mean_stand1,ylim=c(20,70),
+plot(result_reg$sample_size,result_reg$estimated_mean_stand1,ylim=range_volume,
       main="Estimated means stand 1 vs sample size")
 abline(true_mean_stand1,0,col="red")
-plot(result_reg$sample_size,result_reg$estimated_mean_stand2,ylim=c(20,70),
+plot(result_reg$sample_size,result_reg$estimated_mean_stand2,ylim=range_volume,
       main="Estimated means stand 2 vs sample size")
 abline(true_mean_stand2,0,col="green")
-plot(result_reg$sample_size,result_reg$estimated_mean_stand3,ylim=c(20,70),
+plot(result_reg$sample_size,result_reg$estimated_mean_stand3,ylim=range_volume,
       main="Estimated means stand 3 vs sample size")
 abline(true_mean_stand3,0,col="purple")
-plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=c(20,70),
+plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=range_volume,
       main="Estimated means stand 4 vs sample size")
 abline(true_mean_stand4,0,col="orange")
 
 par(mfrow=c(1,2))
-plot(result_reg$sample_size,result_reg$estimated_mean_forest,ylim=c(20,70),
+plot(result_reg$sample_size,result_reg$estimated_mean_forest,ylim=range_volume,
      main="Estimated means forest vs sample size")
 abline(true_mean_forest,0,col="blue")
-plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=c(20,70),
+abline(true_mean_forest+0.1*true_mean_stand4,0,col="blue",lty=2)
+abline(true_mean_forest-0.1*true_mean_stand4,0,col="blue",lty=2)
+plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=range_volume,
       main="Estimated means stand 4 vs sample size")
 abline(true_mean_stand4,0,col="orange")
-
+abline(true_mean_stand4+0.1*true_mean_stand4,0,col="orange",lty=2)
+abline(true_mean_stand4-0.1*true_mean_stand4,0,col="orange",lty=2)
 ```
 
 If we observe the plots for the regression estimator we can see:
@@ -260,7 +269,7 @@ If we observe the plots for the regression estimator we can see:
 
 -   As before, the estimates for the entire forest have much lower variability than estimates for single stands.
 
--   You probably obtained some warnings in the process becasue some stands were never sampled or had very small sampled sizes.
+-   You probably obtained some warnings in the process because some stands were never sampled or had very small sampled sizes.
 
 ## Regression estimator with simple random sampling
 
@@ -268,23 +277,23 @@ Let's now compare use the regression estimator. We will simulate a precision req
 
 ```{r}
 par(mfrow=c(2,2))
-plot(result_reg$sample_size,result_reg$estimated_mean_forest,ylim=c(20,70),
+plot(result_reg$sample_size,result_reg$estimated_mean_forest,ylim=range_volume,
      main="Regression estimator")
 abline(true_mean_forest,0,col="blue")
 abline(true_mean_forest+0.1*true_mean_forest,0,col="blue",lty=2)
 abline(true_mean_forest-0.1*true_mean_forest,0,col="blue",lty=2)
-plot(result$sample_size,result$estimated_mean_forest,ylim=c(20,70),
+plot(result$sample_size,result$estimated_mean_forest,ylim=range_volume,
      main="Sample mean")
 abline(true_mean_forest+0.1*true_mean_forest,0,col="blue",lty=2)
 abline(true_mean_forest-0.1*true_mean_forest,0,col="blue",lty=2)
 
 
-plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=c(20,70),
+plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=range_volume,
       main="Regression estimator")
 abline(true_mean_stand4,0,col="orange")
 abline(true_mean_stand4+0.1*true_mean_stand4,0,col="orange",lty=2)
 abline(true_mean_stand4-0.1*true_mean_stand4,0,col="orange",lty=2)
-plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=c(20,70),
+plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=range_volume,
       main="Sample mean")
 abline(true_mean_stand4,0,col="orange")
 abline(true_mean_stand4+0.1*true_mean_stand4,0,col="orange",lty=2)
@@ -304,21 +313,192 @@ id <- 1:1600
 x <- rep(0:39,each=40)
 y <- rep(0:39,times=40)
 stand <- (1+x%/%20) +2*(y%/%20)
-p95 <- rnorm(1600,150+20*stand,10+5*stand)
-volume <- rnorm(1600,p95+0.05*p95^2,100)
-example1 <- data.frame(id=id,x=x,y=y,stand=stand,volume=volume)
+p95 <- rnorm(1600,50,10+5*stand)
+volume <- rnorm(1600,p95+0.05*p95^2+100*stand+50,60)
+example1 <- data.frame(id=id,x=x,y=y,stand=stand,volume=volume, p95=p95)
 ```
 
-Take the code snippet above and replace the #PLACEHOLDER comment above with data generated by you changing the pattern for volume. You can make the data have a more or less linear relationship. Then re-run the code and see what happens.
+Take the code snippet above and replace the #PLACEHOLDER comment in the first cell of code with a data pattern generated by you for volume. You can make the data have a more or less linear relationship. Then re-run the code and see what happens.
 
 # **Important notes**
 
-All our assessment were based on repeating the sampling process. That sampling process implemented the design that we chose.
+All our assessment were based on repeating the sampling process. That sampling process implemented the design that we chose (simple random sampling). There are some things to consider for general sampling designs:
+
+-   For simple random sampling and systematic designs we use ordinary least square to estimate the line of best fit. For other general sampling designs that does not necessarily hold. Read Särndal et al., (2003) section 6.5 for a more general formulation of regression estimators for general sampling designs.
+
+-   We have used an example in which we know the entire population. This is appropriate to see how regression estimators work. In real applications we will only have the variable of interest for the sample. In those cases we will have to use formulas to estimate the variance of our regression estimator. Särndal et al., (2003) also provides those formulas and they will provide estimates of the spread of the points that we obtain for each sample size.
+
+# Model-based synthetic estimator
+
+To start with the regression estimator we are going to use the data in example2.csv. It is the data we used in example one but the volume column has been removed so we can simulate different models.
 
 ```{r}
+example2 <- read.csv("example2.csv")
+```
+
+Lets start assuming some model form.
+
+$$
+Vol_i\sim N(25+6*P95,130^2) 
+$$
+
+With $Cov(Vol_i,Vol_j)=0$ for all $i$ and $j$
+
+Element 200 in the population has a value of P95 equal to 43.06279, according to this value the volume for this unit is distributed normally with mean 25+6\*43.06279 = 283.3767, and variance 200.
+
+$$
+Vol_{200}\sim N(283.3767,130^2)
+$$ We can calculate the distribution of the mean volume.
+
+$$
+\bar{Vol} \sim N(\frac{1}{1600}\sum_{i=1}^{1600}(25+6P95_i),\frac{1}{1600}130^2)= N(323.8917,3.25^2)
+$$
+
+According to the model the distribution of the mean volume in the forest is:
+
+```{r}
+mean_vol_dist <- mean(25+6*example2$p95)
+mean_vol_dist
+plot(mean_vol_dist+c(-100:100)/10,
+     dnorm(mean_vol_dist+c(-100:100)/10,
+           mean=mean_vol_dist,
+           130/sqrt(1600)),
+     type="l",ylab="Probability density",xlab="Mean Volume")
 
 ```
 
+Lets compare the distribution of the mean to the distribution of given unit centered also at 323.8917.
+
 ```{r}
+par(mfrow=c(1,2))
+plot(x=mean_vol_dist+c(-10000:10000)/10,xlim=c(0,600),
+     y=dnorm(mean_vol_dist+c(-10000:10000)/10,
+     mean=mean_vol_dist, 130),col="red",
+     type="l",ylab="Probability density",xlab="Mean Volume",
+     main="Single unit")
+plot(x=mean_vol_dist+c(-10000:10000)/10,xlim=c(0,600),
+     y=dnorm(mean_vol_dist+c(-10000:10000)/10,
+     mean=mean_vol_dist, 130/sqrt(1600)),col="blue",
+     type="l",ylab="Probability density",xlab="Mean Volume",
+     main="Mean of all units")
 
 ```
+
+We can see that assuming independence is a very strong assumption. With independence departures there is a large compensation. Some units deviate above the mean and some units deviate below the mean causing the variance of the mean to be very small. We will see that this assumption is not realistic in many settings. For example, we can expect volume for units within a give stand to show some correlation. Stands are differentiated units, someone draw the stand boundaries for a reason, and it is reasonable to expect some within stand correlation.
+
+## A more realistic example (still assuming independence)
+
+This is a more realistic example. We have the population and we have sampled 100 units in the field so we have observed volume for those 100 units. For the rest of the population we do not know volume. For all populations we have the values of p95.
+
+```{r}
+example3 <- read.csv("example3.csv")
+View(example3)
+```
+
+We are going to make the hypothesis that there is a linear relationship between volume and p95.
+
+$$
+Vol_i\sim N(a+b*P95,\sigma^2)\:with\:Cov(Vol_i,Vol_j) =0\:for\:all\:i\:and\:j
+$$
+
+We are going to fit the model using the sampled units, so we will divide the data into sampled and unsampled parts.
+
+```{r}
+sampled <- example3[!is.na(example3$volume),]
+unsampled <- example3[!is.na(example3$volume),]
+```
+
+Now using the sampled part we are going to fit a linear
+
+```{r}
+model <- lm(volume~p95,data=sampled)
+summary(model)
+sigma_e <- summary(model)$sigma
+sigma_e
+plot(model)
+```
+
+We have some outliers but we will accept this model to see how we obtain estimates and associated uncertainties with the fitted model. The point estimate is obtained predicting for all elements of the population using the model fitted with the observed sample
+
+```{r}
+# The prediction for the mean in the forest is obtained using the coefficients of the model fitted with the sample
+predicted<-mean(predict(model,example3))
+predicted
+```
+
+To assess the uncertainty of our estimate we consider alternative sampled and unsampled values following the distribution dictated by the model. We repeat the process of fitting the model and computing predictions for all population units 1000 times. There are some differences with the regression estimator:
+
+1.   We are not randomizing the sample. We have some units and those remain fixed.
+
+2.  Randomness come from the model (data generating process), so we generate alternative values for the sampled and unsampled data and repeat the process in the code chunk above.
+
+3.  The mean volume is a random variable itself. It is not a fixed quantity that we can take as a reference, therefore we will measure the differnces between the mean values for the forest and the stand and the predicted values obtain in each iteration.
+
+```{r}
+repeats <- 1000
+differences <- data.frame(rep=c(),
+                      diff_mean_forest=c(),
+                      diff_mean_stand1 = c(),
+                      diff_mean_stand2 = c(),
+                      diff_mean_stand3 = c(),
+                      diff_mean_stand4=c())
+
+for(i in 1:repeats){
+  # create a copy of sampled and unsampled
+  sampled_i <- sampled
+  unsampled_i <- unsampled
+  
+  # generate values of volume according to the model
+  sampled_i$volume <- predict(model,sampled_i) + 
+    rnorm(dim(sampled_i)[1],0,sigma_e)
+  unsampled_i$volume <- predict(model,unsampled_i) + 
+    rnorm(dim(unsampled_i)[1],0,sigma_e)
+  
+  # merge the data in a single data frame for convenience
+  population_i <- rbind(sampled_i,unsampled_i)
+  # repeat the process of fitting the model parameters and calculating 
+  # the mean for the population using the model coefficients
+  model_i <- lm(volume~p95,sampled_i)
+  population_i$prediction <- predict(model_i,population_i)
+  predicted_i <- mean(population_i$prediction)
+  
+  
+  mean_forest_i <- mean(population_i$volume)
+  mean_stand1_i <- mean(population_i[population_i$stand==1,"volume"])
+  mean_stand2_i <- mean(population_i[population_i$stand==2,"volume"])
+  mean_stand3_i <- mean(population_i[population_i$stand==3,"volume"])
+  mean_stand4_i<- mean(population_i[population_i$stand==4,"volume"])
+  
+  pred_mean_forest_i <- mean(population_i$prediction)
+  pred_mean_stand1_i <- mean(population_i[population_i$stand==1,"prediction"])
+  pred_mean_stand2_i <- mean(population_i[population_i$stand==2,"prediction"])
+  pred_mean_stand3_i <- mean(population_i[population_i$stand==3,"prediction"])
+  pred_mean_stand4_i <- mean(population_i[population_i$stand==4,"prediction"])
+  
+  
+  
+  # store the rep and sample size
+  result_reg[cont,"rep"]<-i
+  # calculate the sample means for the forest and each stand
+  result_reg[i,"diff_mean_forest"]<-mean_forest_i-pred_mean_forest_i
+  result_reg[i,"diff_mean_stand1"]<-mean_stand1_i-pred_mean_stand1_i
+  result_reg[i,"diff_mean_stand2"]<-mean_stand2_i-pred_mean_stand2_i
+  result_reg[i,"diff_mean_stand3"]<-mean_stand3_i-pred_mean_stand3_i
+  result_reg[i,"diff_mean_stand4"]<-mean_stand4_i-pred_mean_stand4_i
+
+}
+```
+
+Let's see the how important the differences between our predictions and the mean value in the forest and in the stand can be if the model holds.
+
+```{r}
+hist(result_reg$diff_mean_forest)
+hist(result_reg$diff_mean_stand1)
+hist(result_reg$diff_mean_stand2)
+hist(result_reg$diff_mean_stand3)
+hist(result_reg$diff_mean_stand4)
+```
+
+# References
+
+Särndal, C.-E., Swensson, B., Wretman, J., 2003. Model Assisted Survey Sampling (Springer Series in Statistics).
