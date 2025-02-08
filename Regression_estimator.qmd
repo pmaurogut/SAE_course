@@ -22,8 +22,6 @@ example1 <- read.csv("example1.csv")
 #PLACEHOLDER
 # paste here
 
-
-
 example1$stand <- factor(example1$stand)
 ggplot(example1,aes(x=x,y=y,fill=stand)) + geom_tile()
 ggplot(example1,aes(x=x,y=y,fill=volume)) + geom_tile()
@@ -388,11 +386,13 @@ We can see that assuming independence is a very strong assumption. With independ
 
 ## A more realistic example (still assuming independence)
 
-This is a more realistic example. We have the population and we have sampled 100 units in the field so we have observed volume for those 100 units. For the rest of the population we do not know volume. For all populations we have the values of p95.
+This is a more realistic example. We have a similar population, in this case we have 16 smaller stands. And we have sampled 100 units in the field so we have observed volume for those 100 units. For the rest of the population we do not know volume. For all populations we have the values of p95.
 
 ```{r}
 example3 <- read.csv("example3.csv")
-View(example3)
+example3$stand <- factor(example3$stand)
+ggplot(example3,aes(x=x,y=y,fill=stand)) + geom_tile()
+plot(example3$p95,example3$volume,pch=20)
 ```
 
 We are going to make the hypothesis that there is a linear relationship between volume and p95.
@@ -411,14 +411,14 @@ unsampled <- example3[!is.na(example3$volume),]
 Now using the sampled part we are going to fit a linear
 
 ```{r}
-model <- lm(volume~p95+I(p95^2),data=sampled)
+model <- lm(volume~p95,data=sampled)
 summary(model)
 sigma_e <- summary(model)$sigma
 sigma_e
 plot(model)
 ```
 
-We have some outliers but we will accept this model to see how we obtain estimates and associated uncertainties with the fitted model. The point estimate is obtained predicting for all elements of the population using the model fitted with the observed sample
+We have some outliers but we will accept this model to see how we obtain estimates and associated uncertainties with the fitted model. The point estimate is obtained predicting for all elements of the population using the model fitted with the observed sample.
 
 ```{r}
 # The prediction for the mean in the forest is obtained using the coefficients of the model fitted with the sample
@@ -426,17 +426,21 @@ predicted<-mean(predict(model,example3))
 predicted
 ```
 
-To assess the uncertainty of our estimate we consider alternative sampled and unsampled values following the distribution dictated by the model. We repeat the process of fitting the model and computing predictions for all population units 1000 times. There are some differences with the regression estimator:
+To assess the uncertainty of our estimate we consider alternative vaues, compatible with the model, for the sampled and unsampled parts. We will work with a sample of 50 units wich implies \~3 plots per stand. We will use parametric bootstratping and repeat the process of fitting the model and computing predictions for all population units 1000 times There are some differences with the regression estimator:
 
-1.  We are not randomizing the sample. We have some units and those remain fixed.
+1.  In a model-based setting, the randomness comes from the model (data generating process). We are not going to randomize the sample. We have sampled 50 units and those units will remain fixed.
 
-2.  Randomness come from the model (data generating process), so we generate alternative values for the sampled and unsampled data and repeat the process in the code chunk above.
+2.  Randomness come from the model , so we will generate alternative values for the sampled and unsampled data (compatible with the model) and repeat the process in the code chunk above several times.
 
-3.  The mean volume is a random variable itself. It is not a fixed quantity that we can take as a reference, therefore we will measure the differnces between the mean values for the forest and the stand and the predicted values obtain in each iteration.
+3.  The mean volume for the forest and the stand are also random variables themselves. They are not fixed quantities that we can take as a reference, therefore, we will generate the true value for the forest and each stand in every iteration using the model. As these quantities are random, we cannot use them as a reference. They change in every iteration. Thus, we will measure the differences between the mean values for the forest and each stand and the predicted values obtain in each iteration.
 
 ```{r}
 repeats <- 1000
 differences <- data.frame(rep=c(),
+                      true_mean_forest=c(),
+                      true_mean_stand1 = c(),
+                      true_mean_stand2 = c(),
+                      true_mean_stand3 = c(),
                       pred_mean_forest=c(),
                       pred_mean_stand1 = c(),
                       pred_mean_stand2 = c(),
@@ -480,12 +484,16 @@ for(i in 1:repeats){
   pred_mean_stand3_i <- mean(population_i[population_i$stand==3,"prediction"])
   pred_mean_stand4_i <- mean(population_i[population_i$stand==4,"prediction"])
   
-  
-  
   # store the rep and sample size
   result_reg[cont,"rep"]<-i
-  #
-  # Store the values of the mean for the forest (not the estimated mean)
+  #Store the values of the true mean for the forest and the stands in each iteration
+  result_reg[i,"true_mean_forest"]<-mean_forest_i
+  result_reg[i,"true_mean_stand1"]<-mean_stand1_i
+  result_reg[i,"true_mean_stand2"]<-mean_stand2_i
+  result_reg[i,"true_mean_stand3"]<-mean_stand3_i
+  result_reg[i,"true_mean_stand4"]<-mean_stand4_i
+  
+  # Store the predicted values for the mean for the forest (not the estimated mean)
   result_reg[i,"pred_mean_forest"]<-pred_mean_forest_i
   result_reg[i,"pred_mean_stand1"]<-pred_mean_stand1_i
   result_reg[i,"pred_mean_stand2"]<-pred_mean_stand2_i
@@ -511,7 +519,7 @@ hist(result_reg$diff_mean_stand3)
 hist(result_reg$diff_mean_stand4)
 ```
 
-These results look decent. Now we look at the model predicted values of the repetitions.
+These results look decent. Now we look at the predicted values for all repetitions.
 
 ```{r}
 hist(result_reg$pred_mean_forest)
@@ -521,24 +529,49 @@ hist(result_reg$pred_mean_forest)
 hist(result_reg$pred_mean_forest)
 ```
 
-Check the true model for volume and how the data was actually generated.
+Check the true model for volume and how the data was actually generated and plot observations from different stands with different colours. Pay attention to the magnitude of the quantities in stand_effects.
 
 ```{r}
+set.seed(1234)
 id <- 1:1600
 x <- rep(0:39,each=40)
 y <- rep(0:39,times=40)
-stand <- (1+x%/%20) +2*(y%/%20)
-p95 <- rnorm(1600,50,10+5*stand)
-# CHECK THIS LINE
-volume <- rnorm(1600,p95+0.05*p95^2+100*stand+50,60)
+
+
+stand <- (1+x%/%10) +4*(y%/%10)
+stand_effect <- rnorm(16,0,150)
+stand_effect
+p95 <- rnorm(1600,180,20)
+volume <- rnorm(1600,5+15*p95+stand_effect[stand],50)
 
 example3 <- data.frame(id=id,x=x,y=y,stand=stand,volume=volume, p95=p95)
-example3$volume <- ifelse(sample(1600,20)%in%example1$id,example1$volume,NA)
+example3$stand <- factor(example3$stand)
+stands_1_to_4 <- example3[example3$stand%in%1:4,]
+plot(stands_1_to_4$p95,stands_1_to_4$volume,col=stands_1_to_4$stand,pch=20)
+
+
 
 
 ```
 
-Based on the true data generating process, we would expect differences of around 100 between stands. But why are we getting values that are almost the same for all stands and for the foerst. The model has to be failing in some way. Even worse, we have analyzed the uncertainty based on the assumption that the model holds but it seems that the model we are fitting does not hold. Can we trust this model? Are we missing something?
+Based on the true data generating process, we would expect differences of up to 220 between stands 1 and 2. Why are we getting values that are almost the same for all stands and for the forest? The model has to be failing in some way. Even worse, we have analyzed the uncertainty based on the assumption that the model holds but it seems that the model we are fitting does not hold. Can we trust this model? Are we missing something?
+
+[**We are not modeling stand effects. This type of modeling is sometimes called synthetic, it assumes that a general model holds for all stands, but that has important risks if stands are actually differentiated units, and if someone draw a stand boundary it is probably because something looked different from the surrounding area.**]{.underline}
+
+What can we do? For this cases. There are two solutions that are not optimal:
+
+1.  Use regession estimators for each stand. But we have about 3 plots per stand and chances are that we have stands with no plots. In the best case, regression estimators for the stand will have a large variance.
+
+2.  We could change the model so it includes a different intercept for each stand. But in this model the intercepts for the stands can take any value (we are not assumming anything about how they are generated) and to estimate them we have only about 3 plots per stand so our estimates will also have a large variability.
+
+```{r}
+model_fixed_effects <- lm(volume~p95 + factor(stand)-1,data=sampled)
+summary(model_fixed_effects)
+```
+
+## Is there any other solution?
+
+The answer is yes...but that is something that we will cover after the break...
 
 # References
 
