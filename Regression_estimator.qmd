@@ -529,7 +529,7 @@ hist(result_reg$pred_mean_forest)
 hist(result_reg$pred_mean_forest)
 ```
 
-Check the true model for volume and how the data was actually generated and plot observations from different stands with different colours. Pay attention to the magnitude of the quantities in stand_effects.
+Check the true model for volume and how the data was actually generated and plot observations from different stands with different colors. Pay attention to the magnitude of the quantities in stand_effects.
 
 ```{r}
 set.seed(1234)
@@ -549,9 +549,6 @@ example3$stand <- factor(example3$stand)
 stands_1_to_4 <- example3[example3$stand%in%1:4,]
 plot(stands_1_to_4$p95,stands_1_to_4$volume,col=stands_1_to_4$stand,pch=20)
 
-
-
-
 ```
 
 Based on the true data generating process, we would expect differences of up to 220 between stands 1 and 2. Why are we getting values that are almost the same for all stands and for the forest? The model has to be failing in some way. Even worse, we have analyzed the uncertainty based on the assumption that the model holds but it seems that the model we are fitting does not hold. Can we trust this model? Are we missing something?
@@ -560,19 +557,84 @@ Based on the true data generating process, we would expect differences of up to 
 
 What can we do? For this cases. There are two solutions that are not optimal:
 
-1.  Use regession estimators for each stand. But we have about 3 plots per stand and chances are that we have stands with no plots. In the best case, regression estimators for the stand will have a large variance.
+1.  Use regression estimators for each stand. But we have about 3 plots per stand and chances are that we have stands with no plots. In the best case, regression estimators for the stand will have a large variance.
 
-2.  We could change the model so it includes a different intercept for each stand. But in this model the intercepts for the stands can take any value (we are not assumming anything about how they are generated) and to estimate them we have only about 3 plots per stand so our estimates will also have a large variability.
+2.  We could change the model so it includes a different intercept for each stand.
+
+We will fit a model with a fixed coefficient lifting or pushing down the regression line for each stand.
 
 ```{r}
 model_fixed_effects <- lm(volume~p95 + factor(stand)-1,data=sampled)
+stand_effect
 summary(model_fixed_effects)
 ```
+
+In this model the intercepts for the stands can take any value (we are not assuming anything about how they are generated) and to estimate them we have only about 3 plots per stand . This will remove biases, but our estimates will have a large variance because the stand coefficients are estimated with a very small number of plots per stand.
 
 ## Is there any other solution?
 
 The answer is yes...but that is something that we will cover after the break...
 
+# Small area Unit-level model
+
+## Packages to estimate with unit-level models
+
+There are several packages that allow us working with unit level models. Below is a description of the main packages that we can use.
+
+### sae package
+
+This package covers the main small area estimation models. It provides functions to fit unit-level models and also area-level models and computes predictions for small areas (i.e., stands) providing metrics of uncertainty (mean square errors) for those estimates. It is the most direct package to implement small area estimators.
+
+[**Pros:**]{.underline}
+
+-   Fits basic unit level model, basic area level model and for area level models with spatial, temporal and spatio-temporal correlations.
+
+-   Provides estimates for the considered models for small areas.
+
+-   Provides uncertainty for the estimates for small areas.
+
+-   It also includes design based estimators.
+
+-   Easy to use.
+
+**Cons:**
+
+-   Some cases of interest in forestry are not considered (e.g.,estimates for a group os stands or small areas).
+
+-   Provides tabular summaries of the model but does not return the model itself or allows for graphical summaries.
+
+### nlme  and lme4
+
+This package provides tools to fit fixed-effects and mixed-effects linear and non-linear models.
+
+-   Highly flexible.
+
+-   Complex hierarchies of random-effects.
+
+-   Some graphical summaries
+
+-   Provides a `predict` function which allows generating raster layes.
+
+-   Excelent book documenting the use of the `nlme` package (Pinheiro and Bates, 2000)
+
+-   In addition to modeling random effects, it allows modeling:
+
+    -   Heteroscedaskicity
+
+    -   Error correlations (spatial, temporal or between variables)
+
+**Cons:**
+
+-   Learning curve
+
+-   Once you obtain the model parameters, you have compute stand level estimates and uncertainty metrics (harder). To do this, the best reference is the Small Area Estimation book from Rao and Molina (2015).
+
+## Uncertainty estimation for unit level models
+
 # References
+
+Pinheiro, J.C., Bates, D.M., 2000. Mixed-Effects Models in S and S-PLUS. Springer, New York. <https://doi.org/10.1007/b98882>
+
+Rao, J.N.K., Molina, I., 2015. Small Area Estimation. John Wiley & Sons, Inc.
 
 Särndal, C.-E., Swensson, B., Wretman, J., 2003. Model Assisted Survey Sampling (Springer Series in Statistics).
