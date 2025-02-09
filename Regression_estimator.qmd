@@ -1,5 +1,5 @@
 ---
-title: "Applications of Small Area Estimation Methods in Forest Inventories and ModelingCenter for Intensive Planted-forest Silviculture"
+title: "Applications of Small Area Estimation Methods in Forest Inventories and Modeling. Center for Intensive Planted-forest Silviculture"
 author: "Francisco Mauro, Temesgen Hailemariam &  Bryce Frank"
 format: pdf
 editor: visual
