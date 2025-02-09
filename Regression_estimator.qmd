@@ -1,5 +1,5 @@
 ---
-title: "Part1_code"
+title: "Applications of Small Area Estimation Methods in Forest Inventories and ModelingCenter for Intensive Planted-forest Silviculture"
 author: "Francisco Mauro, Temesgen Hailemariam &  Bryce Frank"
 format: pdf
 editor: visual
@@ -617,7 +617,7 @@ This package provides tools to fit fixed-effects and mixed-effects linear and no
 
 -   Provides a `predict` function which allows generating raster layes.
 
--   Excelent book documenting the use of the `nlme` package (Pinheiro and Bates, 2000)
+-   Excellent book documenting the use of the `nlme` package (Pinheiro and Bates, 2000)
 
 -   In addition to modeling random effects, it allows modeling:
 
@@ -638,6 +638,7 @@ library("sae")
 library("nlme")
 library("sf")
 library("terra")
+library("raster")
 library("mapview")
 library("dplyr")
 library("tidyr")
@@ -647,43 +648,35 @@ library("gridExtra")
 
 ## Example unit-level
 
-```{r, echo=FALSE, warnings=FALSE,results="hide"}
-packs<-c("sf","terra","sae","nlme",
-        "dplyr","tidyr","ggplot2","gridExtra")
-invisible(capture.output(
-  lapply(packs,library,character.only=TRUE,verbose=FALSE)
-))
-
-```
-
 To work with unit-level models we need plots with coordinates that we use to extract their auxiliary information. In this case, we have already extracted two auxiliary variables from lidar data. The lidar data was collected in 2009 and plots were measured in 2010. The auxiliary variables are the 95th percentile of the heights of lidar returns and the standard deviation of those heights.
 
-The field P95 is the 95th percentile, the field SD_H is the standard deviation of lidar heights and ID_SMA is the ID, of the stand in which the plot was collected. On average there are 3-4 plots per stand.
+### Explore the data
+
+We have a raster layer with lidar data and the stand IDs. It is important to ensure that band names in that raster match the names of the data in the sample object.The object plots is an sf object, we create non spatial copy, called plots_df, by removing the geometry (geom) field. Our small areas are the management units in the study area (stands). The field ID_SMA is the identifier of the stand and matches the plots. The field P95 is the 95th percentile, the field SD_H is the standard deviation of lidar heights and ID_SMA is the ID, of the stand in which the plot was collected. On average there are 3-4 plots per stand.
 
 ```{r}
+population_aux_info <- rast("Example_Unit_Level.tif")
+names(population_aux_info) <- c("P95", "SD_H", "ID_SMA") #Ensure consistent names
 plots <- st_read("Field_plots.gpkg")
 colnames(plots)[5] <- "QMD"
+plots_df <- st_drop_geometry(plots)
 
-```
-
-The object plots is an sf object, we create non spatial copy, called plots_df, by removing the geometry (geom) field.
-
-```{r}
-plots_df <- plots
-plots_df$geom <- NULL
-head(plots_df[-c(1:3),c("Plot_ID","ID_SMA","QMD","V","P95","SD_H")])
-```
-
-Our small areas are the management units in the study area (stands). The field ID_SMA is the identifier of the stand and matches the plots.
-
-```{r}
 stands <- st_read("Stands.gpkg")
+mapview(raster(population_aux_info[["P95"]]),legend=FALSE) + 
+  mapview(raster(population_aux_info[["SD_H"]]), legend=FALSE) + 
+  mapview(raster(population_aux_info[["ID_SMA"]]), legend=FALSE) + 
+  mapview(stands, legend=FALSE) + mapview(plots)  
 ```
 
 Stand sample size and average sample size by stand
 
 ```{r}
+head(plots_df[-c(1:3),c("Plot_ID","ID_SMA","QMD","V","P95","SD_H")])
 n_by_stand  <- plots_df |> group_by(ID_SMA) |> summarize(ni=n())
+# Add unsampled stands by merging withh the stands objects.
+n_by_stand <- merge(st_drop_geometry(stands)[,"ID_SMA" ,drop=FALSE],
+                    n_by_stand,all.x=TRUE)
+n_by_stand$ni <- ifelse(is.na(n_by_stand$ni),0,n_by_stand$ni)
 head(n_by_stand)
 ```
 
@@ -698,10 +691,14 @@ pairs(data.frame(plots)[, c("QMD", "V","P95", "SD_H")])
 
 ```
 
-We can fit the basic unit level model using for example, the lme function from nlme. To specify that we have stand random effects we use ,random = \~1\|ID_SMA.
+### Fitting a unit level with nlme
+
+We will start fitting the unit level model using the lme (linear mixed-effects) function from nlme. To specify a random intercept for the stands, we indicate that we want to have a random intercept (in R formula lingo, 1 represents the intercept, the vertical bar is the conditioning symbol and ID_SMA is the column that stores stand IDs), to do so we use random = \~1\|ID_SMA.
 
 ```{r}
 model <- lme(QMD ~ P95, random = ~ 1 | ID_SMA, data = plots)
+model_lm <- lm(QMD ~ P95, data=plots)
+anova(model,model_lm)
 ```
 
 A quick look at the model summary
@@ -729,13 +726,15 @@ qqline(model$coefficients$random$ID_SMA)
 The lme model can be used to obtain pixel level predictions.
 
 ```{r}
-population_aux_info <- rast("Examples_Unit_Level.tif")
-names(population_aux_info) <- c("P95", "SD_H", "ID_SMA")
 preds <- predict(population_aux_info, model, level=1)
 plot(preds)
 ```
 
-We could aggregate these predictions using zonal stats, however, this approach does not let us get unbiased estimates of the mse. To get point estimates of QMD for stands and their associated uncertainty we can use the pbmseBHF function in the sae package. This function needs five inputs
+We could aggregate these predictions using zonal stats, however, this approach does not let us get unbiased estimates of the mse. To get that it would be necessary to use the model coeffcients and implement the mse estimators ourselves.
+
+### Using the sae package
+
+To get point estimates of QMD for stands and their associated uncertainty we can use the pbmseBHF function in the sae package. This function needs five inputs
 
 1.  The model formula for the fixed effects,
 
@@ -747,48 +746,56 @@ We could aggregate these predictions using zonal stats, however, this approach d
 
 5.  pbmseBHF estimates the mse using parametric bootstrap, B is the number replicates for the parametric bootstrap.
 
-**IMPORTANT** To get 3) and 4) we need access to the auxiliary information for the entire population. That information is in the raster file "Examples_SAE_IUFRO_2023.tif". The first band contains P95, the second contains SD_H and the third the stand IDs. we rename the bands so the names match the plots data frame.
+**IMPORTANT** To get 3) and 4) we need access to the auxiliary information for the entire population. That information is in the raster file "Examples_Unit_Level.tif". The first band contains P95, the second contains SD_H and the third the stand IDs. we rename the bands so the names match the plots data frame.
 
 To get 3) we will use the zonal function of the terra package with the mean function or zonal statistics (arc GIS or Q GIS).
 
-```{r,echo = FALSE}
+```{r}
 X_mean <- zonal(population_aux_info[[c("P95", "SD_H")]],
   population_aux_info[["ID_SMA"]],
   fun = mean, na.rm = TRUE
 )
+X_mean <- merge(X_mean,n_by_stand,by="ID_SMA")
 ```
 
 There are some unsample stands, we will only keep the ones that are sampled
 
-```{r, echo = FALSE}
-X_mean <- X_mean[X_mean$ID_SMA %in% plots$ID_SMA, c(1, 2)]
+```{r}
 head(X_mean)
 ```
 
 To get 4) we will use the zonal function of the terra package with the length function
 
 ```{r}
-Popn <- zonal(population_aux_info[["ID_SMA"]],
+Popn <- zonal(population_aux_info[["P95"]],
   population_aux_info[["ID_SMA"]],
   fun = length
 )
+colnames(Popn)<-c("ID_SMA","N")
 
-Popn <- Popn[Popn$ID_SMA %in% plots$ID_SMA, ]
-head(Popn)
+X_mean <- merge(Popn,X_mean,by="ID_SMA")
+print(X_mean)
 ```
 
 Once we have 3) and 4) we can use the pbmseBHF in the sae package, attach the plots object so pbmseBHF will find the information it needs. pnmseBHF obtain point estimates using the basic unit level model and estimates their mean square error using parametric bootstrap. In this case we will only do only 100 reps to speed up the example.
 
-```{r, echo = FALSE,results= 'hide', message=FALSE}
-attach(plots_df)
-invisible(capture.output(result <- pbmseBHF(QMD ~ P95, dom = ID_SMA,
-  meanxpop = X_mean, popnsize = Popn, B = 100)))
-detach(plots_df)
+```{r}
+mean_xpop <- X_mean[,c("ID_SMA","P95")]
+popn_size <- X_mean[,c("ID_SMA","N")]
+doms <- plots_df$ID_SMA
+# we have to add unsampled stands in the plots data.frame
+plots_df <- merge(plots_df,X_mean[ , "ID_SMA",drop=FALSE],all.y=TRUE)
+# and store all domains in a vector
+doms <- plots_df$ID_SMA
+result <- eblupBHF(QMD ~ P95, dom = ID_SMA, selectdom=doms,
+                   meanxpop = mean_xpop,
+                   popnsize = popn_size, data=plots_df)
 ```
 
 Model fit and point estimates for stands are in the elements fit and eblup (estimates) of the element est of result. They are stored as a list and a data.frame respectively. Model fit:
 
 ```{r}
+print(result$est$eblup)
 result$est$fit$summary
 ```
 
@@ -800,8 +807,18 @@ head(result$est$eblup)
 
 Estimated mean square errors are stored as a data.frame in the mse element of the result. Both, estimates and mse can be merged. We can create a column with the rmses to compute coefficients of variation. Once we merge estimates and mses\\rmses we can get the CVs and relative errors. The field ID_SMA is renamed "domain".
 
-```{r, echo = TRUE}
+```{r}
 eblups <- data.frame(result$est$eblup)
+```
+
+### Uncertainty estimation
+
+The package sae provides estimates of uncertainty using the `pb*` functions. In this functions, pb stands for parametric bootstrap. This technique is similar to the one used when introducing model based estimators but it entails many complexities because now we are using a model with random effects.
+
+```{r}
+result <- pbmseBHF(QMD ~ P95, dom = ID_SMA, selectdom=doms,
+                   meanxpop = mean_xpop,
+                   popnsize = popn_size, B = 100,data=plots_df)
 ```
 
 To generate outputs that we can share with gis users we are going to merge all results in a data.frame

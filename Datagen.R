@@ -34,3 +34,4 @@ plot(example3$p95,example3$volume,col=example3$stand,pch=20)
 
 write.csv(example3,"example3.csv",row.names=FALSE)
 
+
