@@ -38,6 +38,7 @@ example1 <- read.csv("example1.csv")
 ```
 
 ```{r}
+
 #PLACEHOLDER
 # paste here
 
@@ -51,6 +52,7 @@ plot(example1$p95,example1$volume,col=example1$stand)
 We will start estimating the average volume in the forest and in the mean volume in each stand doing simple random sampling without replacement. Having the volume of all grid units allows us to obtain the true average volume in the forest.
 
 ```{r}
+
 true_mean_forest <- mean(example1$volume)
 true_mean_stand1 <- mean(example1$volume[example1$stand==1])
 true_mean_stand2 <- mean(example1$volume[example1$stand==2])
@@ -424,7 +426,7 @@ We are going to fit the model using the sampled units, so we will divide the dat
 
 ```{r}
 sampled <- example3[!is.na(example3$volume),]
-unsampled <- example3[!is.na(example3$volume),]
+unsampled <- example3[is.na(example3$volume),]
 ```
 
 Now using the sampled part we are going to fit a linear mode with p95 as auxiliary variable
