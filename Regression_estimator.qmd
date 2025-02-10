@@ -628,7 +628,7 @@ This package provides tools to fit fixed-effects and mixed-effects linear and no
 
 -   Some graphical summaries
 
--   Provides a `predict` function which allows generating raster layes.
+-   Provides a `predict` function which allows generating raster layers.
 
 -   Excellent book documenting the use of the `nlme` package (Pinheiro and Bates, 2000)
 
@@ -734,7 +734,7 @@ We could aggregate these predictions using zonal stats, however, this approach d
 
 ### Using the sae package
 
-To get point estimates of QMD for stands and their associated uncertainty we can use the pbmseBHF function in the sae package. This function needs five inputs
+To get point estimates of QMD for stands and their associated uncertainty we can use the `eblupBHF` and `pbmseBHF` functions in the sae package. These functions the following inputs
 
 1.  The model formula for the fixed effects,
 
@@ -744,11 +744,13 @@ To get point estimates of QMD for stands and their associated uncertainty we can
 
 4.  The popnsize argument, a data frame with the stand ids in the first column and the population sizes in the second column
 
-5.  pbmseBHF estimates the mse using parametric bootstrap, B is the number replicates for the parametric bootstrap.
+`eblupBHF` provides estimates for stands and the fitted model using the 4 inputs listed above. `pbmseBHF` estimates the mse using parametric bootstrap, it requires an aditional input
+
+5.  B, which is the number replicates for the parametric bootstrap.
 
 **IMPORTANT** To get 3) and 4) we need access to the auxiliary information for the entire population. That information is in the raster file "Examples_Unit_Level.tif". The first band contains P95, the second contains SD_H and the third the stand IDs. we rename the bands so the names match the plots data frame.
 
-To get 3) we will use the zonal function of the terra package with the mean function or zonal statistics (arc GIS or Q GIS).
+To get 3) we will use the zonal function of the `terra` package with the mean function or zonal statistics (ArcGIS or QGIS).
 
 ```{r}
 X_mean <- zonal(population_aux_info[[c("P95", "SD_H")]],
@@ -758,13 +760,13 @@ X_mean <- zonal(population_aux_info[[c("P95", "SD_H")]],
 X_mean <- merge(X_mean,n_by_stand,by="ID_SMA")
 ```
 
-There are some unsample stands, we will only keep the ones that are sampled
+There are some unsampled stands, we will only keep the ones that are sampled
 
 ```{r}
 head(X_mean)
 ```
 
-To get 4) we will use the zonal function of the terra package with the length function
+To get 4) we will use the zonal function of the `terra` package with the `length` function
 
 ```{r}
 Popn <- zonal(population_aux_info[["P95"]],
@@ -777,7 +779,7 @@ X_mean <- merge(Popn,X_mean,by="ID_SMA")
 print(X_mean)
 ```
 
-Once we have 3) and 4) we can use the pbmseBHF in the sae package, attach the plots object so pbmseBHF will find the information it needs. pnmseBHF obtain point estimates using the basic unit level model and estimates their mean square error using parametric bootstrap. In this case we will only do only 100 reps to speed up the example.
+Once we have 3) and 4) we can use the `eblupBHF` in the `sae` package, attach the plots object so `eblupBHF` will find the information it needs. `eblupBHF` obtain point estimates using the basic unit level model .
 
 ```{r}
 mean_xpop <- X_mean[,c("ID_SMA","P95")]
@@ -813,7 +815,7 @@ eblups <-result$eblup
 
 ### Uncertainty estimation
 
-The package sae provides estimates of uncertainty using the `pb*` functions. In this functions, pb stands for [**parametric bootstrap**]{.underline} and BHF stands for **Battese, Harter and Fuller**, the statisticians that developed these estimators. This technique is similar to the one used when introducing model based estimators but it entails many complexities because now we are using a model with random effects.
+The package sae provides estimates of uncertainty using the `pbmse*` functions. For the unit-level model we use the function `pbmseBHF.` In these functions pb stands for [**parametric bootstrap**]{.underline} and in `pbmseBHF` BHF stands for **Battese, Harter and Fuller**, the statisticians that developed these estimators. This technique is similar to the one used when introducing model based estimators but it entails many complexities because now we are using a model with random effects.
 
 ```{r}
 result <- pbmseBHF(QMD ~ P95, dom = ID_SMA, selectdom=doms,
@@ -923,8 +925,10 @@ We cannot work with plot level information so we will summarize auxiliary inform
 ```{r}
 mean_aux_stands <- zonal(lidar[[-1]],vect(stands),mean,na.rm=TRUE,as.polygons=TRUE)
 names(mean_aux_stands)[-c(1,2)]<-paste("mean",names(mean_aux_stands)[-c(1,2)],sep="_")
+
 sd_aux_stands <- zonal(lidar[[-1]],vect(stands),sd,na.rm=TRUE,as.polygons=TRUE)
 names(sd_aux_stands)[-c(1,2)]<-paste("sd",names(sd_aux_stands)[-c(1,2)],sep="_")
+
 aux_info_stands <- merge(mean_aux_stands,sd_aux_stands,by=c("Labelstand","StandID"))
 aux_info_stands <- st_as_sf(aux_info_stands)
 ```
@@ -956,7 +960,7 @@ $$
 
 ### Area-level model
 
-Combining the two previous equiations we obtain
+Combining the two previous equations we obtain
 
 $$
 \hat{Vol}_i =a + b*meanzq95_i + v_i + \epsilon_i 
@@ -972,7 +976,7 @@ The previous model has two random components bu from sampling theory t we know h
 
 ### Fitting the area-level model with the `sae` package and stand level estimates
 
-The `sae` package provides two functions for the basic area-level model. They are similar to the ones used for the unit-level model. The first one eblupFH computes estimates for the area-level model in sampled stands (FH stands for Fay and Herriot who developed this technique).
+The `sae` package provides two functions for the basic area-level model. They are similar to the ones used for the unit-level model. The first one `eblupFH` computes estimates for the area-level model in sampled stands (FH stands for Fay and Herriot who developed this technique).
 
 ```{r}
 result_area_level <- eblupFH(Vol_direct ~ mean_zq95, vardir=Var_Vol_direct, 
@@ -993,9 +997,21 @@ mses_area_level$est$eblup
 
 ### Limitations of the `sae` package
 
-The `sae` package only provides estimates and mean square errors for sampled stands. The model can be easily used to obtain synthetic estimates for unsampled stands and formulas for the mean square error in unsampled stands are provided in page XXX of Rao and Molina (2015). We ommit those formulas because they are very complex for this course) in addition, the results from these formulas has to be taken with a grain of salt, at the end we have no information on sampled stands.
+The `sae` package only provides estimates and mean square errors for sampled stands. The model can be easily used to obtain synthetic estimates for unsampled stands and formulas for the mean square error in unsampled stands are provided in page XXX of Rao and Molina (2015). We ommit those formulas because they are very complex for this course) in addition, the result from these formulas has to be taken with a grain of salt, at the end we have no information on unsampled stands.
 
 # 6. Variable selection
+
+One problem when working with lidar auxiliary variables is that the number of predictors is typically very large and some variable selection method is needed. In the BMEF example, there are YY predictors. That means that the number of alternative models that we can fit is $2^Y$ which is a huge number. Therefore it is impossible to inspect all the potential models and some algorithm or method is needed. There are many model selection algorithms that we can apply for fixed effects models. A practical approach is to use those methods to obtain a reduced list of candidate models and then inspect those models gradually.
+
+Below you have a template of a model selection method that uses three steps:
+
+1.  Elimination of highly correlated variables and variables with low variability.
+
+2.  Best subset selection to generate a list of candidate models with up to 6 auxiliary variables. For each number of auxiliary variables included in the model (1,2,...,6) the best 5 models are selected. That results in a list of 30 models that we can sort by adjusted r-square.
+
+3.  We move through the list of candidate models fitting the unit-level or area-level model to our data and inspect the coefficients and residuals. If something is not appropriate we discard the model and move to the next one on the list of candidates.
+
+We recommend doing the last step manually or at least using some graphical summaries to assist the process. Step 3 is the step in which we will check our model, remember that these techniques are based on the model, i.e., the model must hold. So it is importnat to be patient and thorough in this step.
 
 # 7. References
 
