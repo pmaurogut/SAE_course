@@ -1036,7 +1036,7 @@ Y <- data[,"VOL",drop=FALSE]
 
 ```
 
-[**Step 2. Run best subsets (add vif and initialize to NA and sort by adjusted r-squared)**]{.underline}
+[**Step 2. Run best subsets (add vif and initialize to NA and sort by r-squared)**]{.underline}
 
 ```{r}
 select <- regsubsets(X,Y[,1],nbest = 5,nvmax = 6,really.big = TRUE)
@@ -1048,7 +1048,7 @@ summary_select$order<-1:length(summary_select$rsq)
 n <- rowSums(summary_select$which)
 ```
 
-[**Step 3. Tag models with large vif and test if error variance increases.**]{.underline}
+[**Step 3-a. Tag and remove models with large vif and test if error variance increases.**]{.underline}
 
 ```{r}
 models_list <- list()
@@ -1088,6 +1088,31 @@ for(i in 1:dim(summary_select$which)[1]){
   }
   models_list[[i]]<-list(model=model,lm=lm_model)
 }
+
+adjr2 <-summary_select$adjr2[summary_select$vif<5]
+order_model <- summary_select$order[summary_select$vif<5]
+
+```
+
+[**Step 3-b. Sort by adjusted r-squared and start testing manually.**]{.underline}
+
+```{r}
+selected <- order_model[which.max(adjr2)]
+selected <- models_list[[selected]]
+if(inherits(selected$model,"gls")){
+  anova_models <- anova(selected$model,selected$lm)
+  if(anova_models$`p-value`[2]<0.05){
+    test_model<-selected$model
+  }else{
+     test_model<-selected$lm
+  }
+    
+}else{
+  test_model<-selected$lm
+}
+  
+test_model
+summary(test_model)
 ```
 
 # 7. References
