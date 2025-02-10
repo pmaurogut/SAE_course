@@ -18,6 +18,9 @@ library("dplyr")
 library("tidyr")
 library("ggplot2")
 library("gridExtra")
+library("leaps")
+library("caret")
+library("car")
 ```
 
 This markdown document covers the principal concepts of regression estimators, unit-level models and area-level models for small area estimation.
@@ -1011,7 +1014,81 @@ Below you have a template of a model selection method that uses three steps:
 
 3.  We move through the list of candidate models fitting the unit-level or area-level model to our data and inspect the coefficients and residuals. If something is not appropriate we discard the model and move to the next one on the list of candidates.
 
-We recommend doing the last step manually or at least using some graphical summaries to assist the process. Step 3 is the step in which we will check our model, remember that these techniques are based on the model, i.e., the model must hold. So it is importnat to be patient and thorough in this step.
+We recommend doing the last step manually or at least using some graphical summaries to assist the process. Step 3 is the step in which we will check our model, remember that these techniques are based on the model, i.e., the model must hold, so it is importnat to be patient and thorough in this step.
+
+[**Step 1. Removal of highly correlated variables and variables with no variation**]{.underline}
+
+```{r}
+data <- st_read("BMEF.gpkg",layer="plots")
+data <- st_drop_geometry(data) 
+predictors <- c(10:57)
+X<-data[,predictors]
+
+nzv_predictors <- caret::nearZeroVar(X)
+X <-X[,-nzv_predictors]
+corr_matrix_predictors <- cor(X)
+high_corr_indices <- caret::findCorrelation(corr_matrix_predictors, 
+                                            cutoff = 0.95, exact = FALSE)
+reduced_predictors_matrix <- corr_matrix_predictors[, -high_corr_indices]
+X <- X[, -high_corr_indices]
+
+Y <- data[,"VOL",drop=FALSE]
+
+```
+
+[**Step 2. Run best subsets (add vif and initialize to NA and sort by adjusted r-squared)**]{.underline}
+
+```{r}
+select <- regsubsets(X,Y[,1],nbest = 5,nvmax = 6,really.big = TRUE)
+summary_select <- summary(select)
+models <- apply(summary_select$which, 1, function(y) names(y)[which(y)][-1])
+summary_select$vif<-summary_select$adjr2
+summary_select$vif[]<-NA
+summary_select$order<-1:length(summary_select$rsq)
+n <- rowSums(summary_select$which)
+```
+
+[**Step 3. Tag models with large vif and test if error variance increases.**]{.underline}
+
+```{r}
+models_list <- list()
+
+for(i in 1:dim(summary_select$which)[1]){
+  # print(i)
+  formula_i <- as.formula(paste0(colnames(Y),"~",paste(models[[i]],collapse="+")))
+  # print(models[[i]])
+  X_i<-X[ ,models[[i]],drop=FALSE]
+  data_i <- cbind(Y,X_i)
+  # print(names(data_i))
+  model<-try(gls(formula_i,data= data_i,weights=varExp(0.1,form=~fitted(.)),
+                control=glsControl(maxIter = 5000,msMaxIter = 5000,opt="optim")))
+  lm_model<-lm(formula_i,data= data_i)
+  if(inherits(model,"try-error")){
+    model<-lm_model
+  }
+  if(inherits(model,"gls")){
+    a<-summary(model)$tTable
+  }else{
+    a<-summary(model)$coefficients
+  }
+  if(dim(X_i)[2]==1){
+    # print(0)
+    if(all(a[,4]<0.05)){
+      summary_select$vif[i] <- 0
+    }else{
+      summary_select$vif[i] <- 15
+    }
+  }else{
+    # print(x)
+    if(all(a[,4]<0.05)){
+      summary_select$vif[i] <- max(vif(model))
+    }else{
+      summary_select$vif[i] <- 15
+    }
+  }
+  models_list[[i]]<-list(model=model,lm=lm_model)
+}
+```
 
 # 7. References
 
