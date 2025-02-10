@@ -27,7 +27,7 @@ This markdown document covers the principal concepts of regression estimators, u
 
 # 2. Regression estimator
 
-We are going to compare regression estimators with the traditional sample mean for an artificial population that we will use throughout the examples. In this example we have the value of volume for all grid units in the forest along with an auxiliary variable called p95. **THIS NEVER HAPPENS IN REAL LIFE** but will help us understand regression estimators. We will mimic simple random sampling and compute the normal expansion estimator (sample mean) to a regression estimator.
+We are going to compare regression estimators with the traditional sample mean for an artificial population. In this example we have the value of volume for all grid units in the forest along with an auxiliary variable called p95. **THIS NEVER HAPPENS IN REAL LIFE** but it will help us understand regression estimators. We will mimic simple random sampling and compute the normal expansion estimator (sample mean) to a regression estimator.
 
 Our population mimics a square tract of forest of 160 acres with four stands 40 of acres each one. Let's take a look at the data.
 
@@ -35,6 +35,9 @@ Our population mimics a square tract of forest of 160 acres with four stands 40 
 library(ggplot2)
 example1 <- read.csv("example1.csv")
 
+```
+
+```{r}
 #PLACEHOLDER
 # paste here
 
@@ -53,7 +56,7 @@ true_mean_stand1 <- mean(example1$volume[example1$stand==1])
 true_mean_stand2 <- mean(example1$volume[example1$stand==2])
 true_mean_stand3 <- mean(example1$volume[example1$stand==3])
 true_mean_stand4 <- mean(example1$volume[example1$stand==4])
-print("True mean")
+print("True mean forest")
 true_mean_forest
 print("True mean stand 1")
 true_mean_stand1
@@ -69,7 +72,7 @@ range_volume <- range(example1$volume)
 
 ## Sample mean with simple random sampling
 
-Let's simulate our simple random sampling. We will repeat the simple random sampling 100 with sample sizes of 16, 64, 96, 128, 160, 320 and 640 and plot our estimates to visualize the variance of doing simple random sampling. We will store the result of each iteration in a data.frame with our estimate, the sample size and the iteration.
+Let's simulate our simple random sampling. We will repeat the simple random sampling 100 times with sample sizes of 16, 64, 96, 128, 160, 320 and 640 and plot our estimates to visualize the variance of the sample mean under simple random sampling. We will store the result of each iteration in a data.frame with our estimate, the sample size and the iteration.
 
 ```{r}
 repeats <- 100
@@ -109,7 +112,7 @@ result$true_mean_stand4 <- true_mean_stand4
 
 ```
 
-Let's now plot our results as a function of the sample size. We will simulate a precision requirement of +- 10% in our estimates piloting discontinuous lines around the true value
+Let's now plot our results as a function of the sample size. We will simulate a precision requirement of +- 10% in our estimates ploting discontinuous lines around the true value as references.
 
 ```{r}
 
@@ -150,7 +153,7 @@ Inspecting the generated figures we can observe the variance of our estimates as
 
 2.  As we know the sample mean is unbiased and, on average, tend to coincide with the true means for the forest and the stands.
 
-3.  When we compare the figure for the total forest and the figure for stand 4, we see that at some point, the sample size for stand 4 becomes so small that the variability is very large.
+3.  When we compare the figure for the total forest and the figure for stand 4 (third figure), we see that at some point, the sample size for stand 4 becomes so small that the variability is very large.
 
 Now we are going to repeat the same process but instead of using the sample mean we will use the auxiliary information to calculate the regression estimator using p95 as auxiliary variable (X).
 
@@ -215,8 +218,6 @@ for(i in 1:repeats){
     if(inherits(media_reg_stand4,"try-error")){
       media_reg_stand4<-NA
     }
-    
-    
     
     stand2 <- sampled_data_reg[sampled_data_reg$stand==2,]
     stand3 <- sampled_data_reg[sampled_data_reg$stand==3,]
@@ -283,14 +284,14 @@ If we observe the plots for the regression estimator we can see:
 
 -   As before, the estimates for the entire forest have much lower variability than estimates for single stands.
 
--   You probably obtained some warnings in the process because some stands were never sampled or had very small sampled sizes.
+-   You probably obtained some warnings in the process because some stands were never sampled or had very small sampled sizes and the regression estimator cannot be computed.
 
 ## Regression estimator with simple random sampling
 
-Let's now compare use the regression estimator. We will simulate a precision requirement of +- 10% in our estimates plotting discontinuous lines around the true value
+Let's now compare the sample mean to the regression estimator. We will simulate a precision requirement of +- 10% in our estimates plotting discontinuous lines around the true value
 
 ```{r}
-par(mfrow=c(2,2))
+par(mfrow=c(1,2))
 plot(result_reg$sample_size,result_reg$estimated_mean_forest,ylim=range_volume,
      main="Regression estimator")
 abline(true_mean_forest,0,col="blue")
@@ -308,7 +309,7 @@ plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=range_volume,
 abline(true_mean_stand4,0,col="orange")
 abline(true_mean_stand4+0.1*true_mean_stand4,0,col="orange",lty=2)
 abline(true_mean_stand4-0.1*true_mean_stand4,0,col="orange",lty=2)
-plot(result_reg$sample_size,result_reg$estimated_mean_stand4,ylim=range_volume,
+plot(result$sample_size,result$estimated_mean_stand4,ylim=range_volume,
       main="Sample mean")
 abline(true_mean_stand4,0,col="orange")
 abline(true_mean_stand4+0.1*true_mean_stand4,0,col="orange",lty=2)
@@ -317,7 +318,7 @@ abline(true_mean_stand4-0.1*true_mean_stand4,0,col="orange",lty=2)
 
 When comparing the sample mean to the regression estimator, we can observe that:
 
--   For the entire forest the regression estimator does much better for all sample sizes. This is because the relationship between volume and p95 can be approximated well by a linear function. The relationship, however, is not linear, it was created with the code spinet below, but this method does not rely on assuming that a linear relationship exists.
+-   For the entire forest the regression estimator does much better for all sample sizes but the smallest one. This is because the relationship between volume and p95 can be approximated well by a linear function. The relationship, however, is not linear, it was created with the code spinet below, but this method does not rely on assuming that a linear relationship exists. That is why it provides unbiased estimates even for a case in which we know that the relationship between variable of interest and axiliary variable is not linear.
 
 -   For both methods variability for stands was larger and for small sample sizes variances were large.
 
@@ -359,11 +360,11 @@ $$
 
 With $Cov(Vol_i,Vol_j)=0$ for all $i$ and $j$
 
-Element 200 in the population has a value of P95 equal to 43.06279, according to this value the volume for this unit is distributed normally with mean 25+6\*43.06279 = 283.3767, and variance 200.
+Element 200 in the population has a value of P95 equal to 43.06279, according to this value the volume for this unit is distributed normally with mean 25+6\*43.06279 = 283.3767, and variance 130.
 
 $$
 Vol_{200}\sim N(283.3767,130^2)
-$$ We can calculate the distribution of the mean volume.
+$$ We can calculate the distribution of the mean volume for the forest.
 
 $$
 \bar{Vol} \sim N(\frac{1}{1600}\sum_{i=1}^{1600}(25+6P95_i),\frac{1}{1600}130^2)= N(323.8917,3.25^2)
@@ -372,6 +373,7 @@ $$
 According to the model the distribution of the mean volume in the forest is:
 
 ```{r}
+set.seed(1234)
 mean_vol_dist <- mean(25+6*example2$p95)
 mean_vol_dist
 plot(mean_vol_dist+c(-100:100)/10,
@@ -382,7 +384,7 @@ plot(mean_vol_dist+c(-100:100)/10,
 
 ```
 
-Lets compare the distribution of the mean to the distribution of given unit centered also at 323.8917.
+Lets compare the distribution of the mean to the distribution of a given unit centered also at 328.4025.
 
 ```{r}
 par(mfrow=c(1,2))
@@ -399,7 +401,7 @@ plot(x=mean_vol_dist+c(-10000:10000)/10,xlim=c(0,600),
 
 ```
 
-We can see that assuming independence is a very strong assumption. With independence departures there is a large compensation. Some units deviate above the mean and some units deviate below the mean causing the variance of the mean to be very small. We will see that this assumption is not realistic in many settings. For example, we can expect volume for units within a give stand to show some correlation. Stands are differentiated units, someone draw the stand boundaries for a reason, and it is reasonable to expect some within stand correlation.
+We can see that assuming independence is a very strong assumption. With independence there is a large compensation of departures from the mean. Some units deviate above the mean and some units deviate below the mean and positive an negative deviations occurr independent of each other. This causes that the variance of the mean for the forest is very small, there is still some variance which is important and tell us that in a model-setting the target parameter is a random variable, but it is small. We will see that the independence assumption is not realistic in many situations. Stands are differentiated units, someone draw the stand boundaries for a reason, and it is reasonable to expect some within stand correlation. For example, we can expect volume for units within a give stand to show some correlation.
 
 ## A more realistic example (still assuming independence)
 
@@ -425,7 +427,7 @@ sampled <- example3[!is.na(example3$volume),]
 unsampled <- example3[!is.na(example3$volume),]
 ```
 
-Now using the sampled part we are going to fit a linear
+Now using the sampled part we are going to fit a linear mode with p95 as auxiliary variable
 
 ```{r}
 model <- lm(volume~p95,data=sampled)
@@ -443,16 +445,18 @@ predicted<-mean(predict(model,example3))
 predicted
 ```
 
-To assess the uncertainty of our estimate we consider alternative values, compatible with the model, for the sampled and unsampled parts. We will work with a sample of 50 units which implies \~3 plots per stand. We will use parametric bootstratping and repeat the process of fitting the model and computing predictions for all population units 1000 times There are some differences with the regression estimator:
+To assess the uncertainty of our estimate we consider alternative values, compatible with the model, for the sampled and unsampled parts. We will work with a sample of 50 units which implies \~3 plots per stand. We will use parametric bootstratping and repeat the process of fitting the model and computing predictions for all population units 1000 times. However, in there are some differences bootrstraping techiniques used for the regression estimator (similar but not the same as in the previous section):
 
 1.  In a model-based setting, the randomness comes from the model (data generating process). We are not going to randomize the sample. We have sampled 50 units and those units will remain fixed.
 
 2.  Randomness come from the model , so we will generate alternative values for the sampled and unsampled data (compatible with the model) and repeat the process in the code chunk above several times.
 
-3.  The mean volume for the forest and the stand are also random variables themselves. They are not fixed quantities that we can take as a reference, therefore, we will generate the true value for the forest and each stand in every iteration using the model. As these quantities are random, we cannot use them as a reference. They change in every iteration. Thus, we will measure the differences between the mean values for the forest and each stand and the predicted values obtain in each iteration.
+3.  The mean volume for the forest and the stand are also random variables themselves. They are not fixed quantities that we can take as a reference, therefore, we will generate the true value for the forest and each stand in every iteration using the model. As these quantities are random, we cannot use them as a reference because they change in every iteration. Thus, we will measure the differences between the mean values for the forest and each stand and the predicted values obtained in each iteration.
 
 ```{r}
-repeats <- 1000
+# B is the number of repeats
+B <- 1000
+# creates data frame to store results (target parameter in iteration i, predicted parameter in iteration i and differences between target and predicted)
 differences <- data.frame(rep=c(),
                       true_mean_forest=c(),
                       true_mean_stand1 = c(),
@@ -469,7 +473,8 @@ differences <- data.frame(rep=c(),
                       diff_mean_stand3 = c(),
                       diff_mean_stand4=c())
 
-for(i in 1:repeats){
+# Repeat repeats" times
+for(i in 1:B){
   # create a copy of sampled and unsampled
   sampled_i <- sampled
   unsampled_i <- unsampled
@@ -526,7 +531,7 @@ for(i in 1:repeats){
 }
 ```
 
-Let's see the how important the differences between our predictions and the mean value in the forest and in the stand can be if the model holds.
+Let's see the how important the differences between our predictions and the mean value in the forest and in the stand can be .
 
 ```{r}
 hist(result_reg$diff_mean_forest)
@@ -570,13 +575,13 @@ plot(stands_1_to_4$p95,stands_1_to_4$volume,col=stands_1_to_4$stand,pch=20)
 
 Based on the true data generating process, we would expect differences of up to 220 between stands 1 and 2. Why are we getting values that are almost the same for all stands and for the forest? The model has to be failing in some way. Even worse, we have analyzed the uncertainty based on the assumption that the model holds but it seems that the model we are fitting does not hold. Can we trust this model? Are we missing something?
 
-[**We are not modeling stand effects. This type of modeling is sometimes called synthetic, it assumes that a general model holds for all stands, but that has important risks if stands are actually differentiated units, and if someone draw a stand boundary it is probably because something looked different from the surrounding area.**]{.underline}
+[**We are not modeling stand effects. This type of modeling is sometimes called synthetic, it assumes that a general model holds for all stands, but that has important risks if stands are actually differentiated units. At the end, if someone draws a stand boundary it is probably because something looked different from the surrounding area.**]{.underline}
 
 # 4. Small area Unit-level model
 
-In the previous sections we revised the synthetic estimator and observed that there are situations in which it can be risky. What can we do? For these cases. There are two solutions that are not optimal:
+In the previous sections we revised the synthetic estimator and observed that there are situations in which it can be risky. What can we dox for these cases? There are two solutions that are not optimal:
 
-1.  Use regression estimators for each stand. But we have about 3 plots per stand and chances are that we have stands with no plots. In the best case, regression estimators for the stand will have a large variance because of the small sampled size.
+1.  Use regression estimators for each stand. We will not have biases, but we have about 3 plots per stand and chances are that we have stands with no plots. In the best case, regression estimators for the stand will have a large variance because of the small sampled size.
 
 2.  We could change the model so it includes a different intercept for each stand.
 
@@ -588,11 +593,11 @@ stand_effect
 summary(model_fixed_effects)
 ```
 
-In this model the intercepts for the stands can take any value (we are not assuming anything about how they are generated) and to estimate them we have only about 3 plots per stand . This will remove biases, but our estimates will have a large variance because the stand coefficients are estimated with a very small number of plots per stand.
+In this model the intercepts for the stands can take any value (we are not assuming anything about how they are generated) and to estimate them we have only about 3 plots per stand . This will remove biases from the synthetic estimator, but our estimates will have large variance because the stand coefficients are estimated with a very small number of plots per stand.
 
 ## Is there any other solution?
 
-The answer is yes...but that is something that we will cover after the break...
+The answer is yes.... The unit-level small area model. This model makes assumptions about how stand effects are generated allowing for a reduction in the number of model parameters while considering between stands variation.
 
 ## Packages to estimate with unit-level models
 
@@ -604,7 +609,7 @@ This package covers the main small area estimation models. It provides functions
 
 [**Pros:**]{.underline}
 
--   Fits basic unit level model, basic area level model and for area level models with spatial, temporal and spatio-temporal correlations.
+-   Fits basic unit-level model, basic area-level model and for area-level models with spatial, temporal and spatio-temporal correlations.
 
 -   Provides estimates for the considered models for small areas.
 
