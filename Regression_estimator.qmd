@@ -298,6 +298,7 @@ abline(true_mean_forest+0.1*true_mean_forest,0,col="blue",lty=2)
 abline(true_mean_forest-0.1*true_mean_forest,0,col="blue",lty=2)
 plot(result$sample_size,result$estimated_mean_forest,ylim=range_volume,
      main="Sample mean")
+abline(true_mean_forest,0,col="blue")
 abline(true_mean_forest+0.1*true_mean_forest,0,col="blue",lty=2)
 abline(true_mean_forest-0.1*true_mean_forest,0,col="blue",lty=2)
 
@@ -539,10 +540,10 @@ These results look decent. Now we look at the predicted values for all repetitio
 
 ```{r}
 hist(result_reg$pred_mean_forest)
-hist(result_reg$pred_mean_forest)
-hist(result_reg$pred_mean_forest)
-hist(result_reg$pred_mean_forest)
-hist(result_reg$pred_mean_forest)
+hist(result_reg$pred_mean_stand1)
+hist(result_reg$pred_mean_stand2)
+hist(result_reg$pred_mean_stand3)
+hist(result_reg$pred_mean_stand4)
 ```
 
 Check the true model for volume and how the data was actually generated; plot observations from different stands with different colors. Pay attention to the magnitude of the quantities in stand_effects.
@@ -615,7 +616,7 @@ This package covers the main small area estimation models. It provides functions
 
 [**Cons:**]{.underline}
 
--   Some cases of interest in forestry are not considered (e.g.,estimates for a group os stands or small areas).
+-   Some cases of interest in forestry are not considered (e.g.,estimates for a group of stands or small areas).
 
 -   Provides tabular summaries of the model but does not return the model itself or allows for graphical summaries.
 
@@ -733,7 +734,7 @@ preds <- predict(population_aux_info, model, level=1)
 plot(preds)
 ```
 
-We could aggregate these predictions using zonal stats, however, this approach does not let us get unbiased estimates of the mse. To get that it would be necessary to use the model coeffcients and implement the mse estimators ourselves.
+We could aggregate these predictions using zonal stats, however, this approach does not let us get unbiased estimates of the mse. To get that it would be necessary to use the model coefficients and implement the mse estimators ourselves.
 
 ### Using the sae package
 
@@ -747,7 +748,7 @@ To get point estimates of QMD for stands and their associated uncertainty we can
 
 4.  The popnsize argument, a data frame with the stand ids in the first column and the population sizes in the second column
 
-`eblupBHF` provides estimates for stands and the fitted model using the 4 inputs listed above. `pbmseBHF` estimates the mse using parametric bootstrap, it requires an aditional input
+`eblupBHF` provides estimates for stands and the fitted model using the 4 inputs listed above. `pbmseBHF` estimates the mse using parametric bootstrap, it requires an additional input
 
 5.  B, which is the number replicates for the parametric bootstrap.
 
