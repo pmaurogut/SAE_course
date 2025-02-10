@@ -7,7 +7,20 @@ editor: visual
 
 # 1. Introduction
 
-This markdown document covers the principal concepts of regression estimators and introduces unit level models. The code section concludes introducing the unit level model.
+```{r}
+library("sae")
+library("nlme")
+library("sf")
+library("terra")
+library("raster")
+library("mapview")
+library("dplyr")
+library("tidyr")
+library("ggplot2")
+library("gridExtra")
+```
+
+This markdown document covers the principal concepts of regression estimators, unit-level models and area-level models for small area estimation.
 
 # 2. Regression estimator
 
@@ -633,19 +646,6 @@ This package provides tools to fit fixed-effects and mixed-effects linear and no
 
 Let's install these packages and some extra packages to continue with our examples.
 
-```{r, echo=FALSE, warnings=FALSE,results="hide"}
-library("sae")
-library("nlme")
-library("sf")
-library("terra")
-library("raster")
-library("mapview")
-library("dplyr")
-library("tidyr")
-library("ggplot2")
-library("gridExtra")
-```
-
 ## Example unit-level
 
 To work with unit-level models we need plots with coordinates that we use to extract their auxiliary information. In this case, we have already extracted two auxiliary variables from lidar data. The lidar data was collected in 2009 and plots were measured in 2010. The auxiliary variables are the 95th percentile of the heights of lidar returns and the standard deviation of those heights.
@@ -813,7 +813,7 @@ eblups <-result$eblup
 
 ### Uncertainty estimation
 
-The package sae provides estimates of uncertainty using the `pb*` functions. In this functions, pb stands for [**parametric bootstrap.**]{.underline} This technique is similar to the one used when introducing model based estimators but it entails many complexities because now we are using a model with random effects.
+The package sae provides estimates of uncertainty using the `pb*` functions. In this functions, pb stands for [**parametric bootstrap**]{.underline} and BHF stands for **Battese, Harter and Fuller**, the statisticians that developed these estimators. This technique is similar to the one used when introducing model based estimators but it entails many complexities because now we are using a model with random effects.
 
 ```{r}
 result <- pbmseBHF(QMD ~ P95, dom = ID_SMA, selectdom=doms,
@@ -994,10 +994,6 @@ mses_area_level$est$eblup
 ### Limitations of the `sae` package
 
 The `sae` package only provides estimates and mean square errors for sampled stands. The model can be easily used to obtain synthetic estimates for unsampled stands and formulas for the mean square error in unsampled stands are provided in page XXX of Rao and Molina (2015). We ommit those formulas because they are very complex for this course) in addition, the results from these formulas has to be taken with a grain of salt, at the end we have no information on sampled stands.
-
-```{r}
-
-```
 
 # 6. Variable selection
 
