@@ -32,7 +32,6 @@ We are going to compare regression estimators with the traditional sample mean f
 Our population mimics a square tract of forest of 160 acres with four stands 40 of acres each one. Let's take a look at the data.
 
 ```{r}
-library(ggplot2)
 example1 <- read.csv("example1.csv")
 
 ```
@@ -245,7 +244,7 @@ result_reg$true_mean_stand3 <- true_mean_stand3
 result_reg$true_mean_stand4 <- true_mean_stand4
 ```
 
-No let's plot the results
+Now let's plot the results
 
 ```{r}
 plot(result_reg$sample_size,result_reg$estimated_mean_forest,ylim=range_volume,
@@ -663,7 +662,7 @@ To work with unit-level models we need plots with coordinates that we use to ext
 
 ### Explore the data
 
-We have a raster layer with lidar data and the stand IDs. It is important to ensure that band names in that raster match the names of the data in the sample object.The object plots is an sf object, we create non spatial copy, called plots_df, by removing the geometry (geom) field. Our small areas are the management units in the study area (stands). The field ID_SMA is the identifier of the stand and matches the plots. The field P95 is the 95th percentile, the field SD_H is the standard deviation of lidar heights and ID_SMA is the ID, of the stand in which the plot was collected. On average there are 3-4 plots per stand.
+We have a raster layer with lidar data and the stand IDs. It is important to ensure that band names in that raster match the names of the data in the sample object.The object plots is an sf object, we create non spatial copy, called plots_df, by removing the geometry (geom) field. Our small areas are the management units in the study area (stands). The field ID_SMA is the identifier of the stand and matches the plots. The field P95 is the 95th percentile, the field SD_H is the standard deviation of lidar heights and ID_SMA is the ID of the stand in which the plot was collected. On average there are 3-4 plots per stand.
 
 ```{r}
 population_aux_info <- rast("Example_Unit_Level.tif")
@@ -815,7 +814,7 @@ result$fit$summary
 The column eblup stores the stand level estimates.
 
 ```{r}
-head(result$est$eblup)
+head(result$eblup)
 ```
 
 Estimated mean square errors are stored as a data.frame in the mse element of the result. Both, estimates and mse can be merged. We can create a column with the rmses to compute coefficients of variation. Once we merge estimates and mses\\rmses we can get the CVs and relative errors. The field ID_SMA is renamed "domain".
@@ -862,8 +861,9 @@ grid.arrange(estimates_plot, RE_plot, ncol = 1)
 Or compare point estimates and uncertainties of direct estimators and eblups. For that we combine in a data frame direct estimates and eblups and create some helper columns.
 
 ```{r}
+
 direct_estimates <- group_by(plots_df,ID_SMA)|>
-  summarize(QMD_direct=mean(QMD),se_direct = sd(QMD)/sqrt(n()))
+  dplyr::summarize(QMD_direct=mean(QMD),se_direct = sd(QMD)/sqrt(n()))
 
 eblups_stands <- merge(eblups_stands,direct_estimates,by="ID_SMA")
 eblups_stands$unit_lower <- eblups_stands$eblup - 1.96*eblups_stands$rmse
@@ -911,7 +911,7 @@ In these situations we can still make use of auxiliary information layers by usi
 
 The area-level model appears when combining two models. A model relating the true but unknown value of the parameter of interest (e.g., true volume in the stand) and auxiliary information at the stand level, and a model relating ground based estimates for stands and sampling errors.
 
-Let's see a use case of area level models. We are in a ponderosa pine dominated forest in northern California. We have a layer with management units or stands and a set of field plots. In this case the field plots have very good coordinates (we will use them later to do variable selection for a unit-level model), but we are going to assume that the coordinates are not good and we only know the stand in which each plot is located. We also have a set of lidar variables computed over a 20m resolution grid.
+Let's see a use case of area level models. We are in a ponderosa pine dominated forest in northern California. We have a layer with management units or stands and a set of field plots. In this case the field plots have very good coordinates (we will use them later to do variable selection for a unit-level model), but we are going to assume that the coordinates are not good and we only know the stand in which each plot is located. We also have a set of lidar variables computed over a 20m resolution grid. Lets load the stands, plots and lidar data.
 
 ```{r}
 plots<- read.csv("Plots_BMEF.csv")
@@ -963,7 +963,7 @@ We do not know $Vol_i$ instead we have the means of our plots (direct estimates,
 
 ### Sampling model
 
-Based on sample theory, the mean of the plots within a stand provides an unbiased estimate of the stand volume. For large samples, the sampling error $e_i$ will be normally distributed around 0. With small samples the sample mean remains unbiased but has large variance and an unknown distribution, however, the area-level model is robust to departures from normality.
+Based on sample theory, the mean of the plots within a stand provides an unbiased estimate of the mean volume of the stand. For large samples, the sampling error $e_i$ will be normally distributed around 0. With small samples the sample mean remains unbiased but has large variance and an unknown distribution, however, the area-level model is robust to departures from normality.
 
 $$
 \hat{Vol}_i = Vol_i + \epsilon_i \ with \ \epsilon_i \sim N(0,\Psi_i^2)
@@ -983,11 +983,11 @@ $$
 v_i \sim N(0,\sigma^2) \  and \ \epsilon_i \sim N(0,\Psi_i^2)
 $$
 
-The previous model has two random components bu from sampling theory t we know how to estimate how to estimate the variance $\psi_i^2$ of the sampling error. It is the column Var_Vol_dir in the stand summaries.
+The previous model has two random components bu from sampling theory we know how how to estimate the variance $\psi_i^2$ of the sampling error. It is the column Var_Vol_dir in the stand summaries.
 
 ### Fitting the area-level model with the `sae` package and stand level estimates
 
-The `sae` package provides two functions for the basic area-level model. They are similar to the ones used for the unit-level model. The first one `eblupFH` computes estimates for the area-level model in sampled stands (FH stands for Fay and Herriot who developed this technique).
+The `sae` package provides two functions for the basic area-level model. They are similar to the ones used for the area-level model. The first one `eblupFH` computes estimates for the area-level model in sampled stands (FH stands for Fay and Herriot who developed this technique).
 
 ```{r}
 result_area_level <- eblupFH(Vol_direct ~ mean_zq95, vardir=Var_Vol_direct, 
@@ -997,7 +997,7 @@ result_area_level
 
 ## Uncertainty estimation
 
-The second `mseFH` computes estimates along with uncertainty metrics obtained analytic expressions for the mean squared error. This function also provides stand level estimates. The result is a list with two elements est (another list that contains the summary of the model fit in element fit, and the stand level estimates in eblup) and mse (the mean square error of the stand level estimates).
+The second `mseFH` computes estimates along with uncertainty metrics obtained using analytic expressions for the mean squared error. This function also provides stand level estimates. The result is a list with two elements est (another list that contains the summary of the model fit in element fit, and the stand level estimates in eblup) and mse (the mean square error of the stand level estimates).
 
 ```{r}
 mses_area_level <- mseFH(Vol_direct ~ mean_zq95, vardir=Var_Vol_direct, 
@@ -1008,7 +1008,7 @@ mses_area_level$est$eblup
 
 ### Limitations of the `sae` package
 
-The `sae` package only provides estimates and mean square errors for sampled stands. The model can be easily used to obtain synthetic estimates for unsampled stands and formulas for the mean square error in unsampled stands are provided in page XXX of Rao and Molina (2015). We ommit those formulas because they are very complex for this course) in addition, the result from these formulas has to be taken with a grain of salt, at the end we have no information on unsampled stands.
+The `sae` package only provides estimates and mean square errors for sampled stands. The model can be easily used to obtain synthetic estimates for unsampled stands and formulas for the mean square error in unsampled stands are provided in page 172 of Rao and Molina (2015). We ommit those formulas because they are very complex for this course) in addition, the result from these formulas has to be taken with a grain of salt, at the end we have no information on unsampled stands.
 
 # 6. Variable selection
 
@@ -1029,7 +1029,7 @@ We recommend doing the last step manually or at least using some graphical summa
 ```{r}
 data <- st_read("BMEF.gpkg",layer="plots")
 data <- st_drop_geometry(data) 
-predictors <- c(10:57)
+predictors <- c(10:14,16:63)
 X<-data[,predictors]
 
 nzv_predictors <- caret::nearZeroVar(X)
@@ -1059,6 +1059,7 @@ n <- rowSums(summary_select$which)
 [**Step 3-a. Tag and remove models with large vif and test if error variance increases.**]{.underline}
 
 ```{r}
+
 models_list <- list()
 
 for(i in 1:dim(summary_select$which)[1]){
@@ -1067,34 +1068,15 @@ for(i in 1:dim(summary_select$which)[1]){
   # print(models[[i]])
   X_i<-X[ ,models[[i]],drop=FALSE]
   data_i <- cbind(Y,X_i)
+  try(model<-lm(formula_i,data= data_i))
   # print(names(data_i))
-  model<-try(gls(formula_i,data= data_i,weights=varExp(0.1,form=~fitted(.)),
-                control=glsControl(maxIter = 5000,msMaxIter = 5000,opt="optim")))
-  lm_model<-lm(formula_i,data= data_i)
-  if(inherits(model,"try-error")){
-    model<-lm_model
-  }
-  if(inherits(model,"gls")){
-    a<-summary(model)$tTable
+  if(dim(data_i)[2]>2){
+    summary_select$vif[i] <- max(vif(model))
   }else{
-    a<-summary(model)$coefficients
+    model<-0
   }
-  if(dim(X_i)[2]==1){
-    # print(0)
-    if(all(a[,4]<0.05)){
-      summary_select$vif[i] <- 0
-    }else{
-      summary_select$vif[i] <- 15
-    }
-  }else{
-    # print(x)
-    if(all(a[,4]<0.05)){
-      summary_select$vif[i] <- max(vif(model))
-    }else{
-      summary_select$vif[i] <- 15
-    }
-  }
-  models_list[[i]]<-list(model=model,lm=lm_model)
+  
+  models_list[[i]]<-list(model=model)
 }
 
 adjr2 <-summary_select$adjr2[summary_select$vif<5]
@@ -1107,20 +1089,7 @@ order_model <- summary_select$order[summary_select$vif<5]
 ```{r}
 selected <- order_model[which.max(adjr2)]
 selected <- models_list[[selected]]
-if(inherits(selected$model,"gls")){
-  anova_models <- anova(selected$model,selected$lm)
-  if(anova_models$`p-value`[2]<0.05){
-    test_model<-selected$model
-  }else{
-     test_model<-selected$lm
-  }
-    
-}else{
-  test_model<-selected$lm
-}
-  
-test_model
-summary(test_model)
+
 ```
 
 # 7. References
