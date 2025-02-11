@@ -449,7 +449,7 @@ predicted<-mean(predict(model,example3))
 predicted
 ```
 
-To assess the uncertainty of our estimate we consider alternative values, compatible with the model, for the sampled and unsampled parts. We will work with a sample of 50 units which implies \~3 plots per stand. We will use parametric bootstratping and repeat the process of fitting the model and computing predictions for all population units 1000 times. However, in there are some differences bootrstraping techiniques used for the regression estimator (similar but not the same as in the previous section):
+To assess the uncertainty of our estimate we consider alternative values, compatible with the model, for the sampled and unsampled parts. We will work with a sample of 50 units which implies \~3 plots per stand. We will use parametric bootstraping and repeat the process of fitting the model and computing predictions for all population units 1000 times. However, in there are some differences bootstrapping for design based techniques used for the regression estimator (similar but not the same as in the previous section):
 
 1.  In a model-based setting, the randomness comes from the model (data generating process). We are not going to randomize the sample. We have sampled 50 units and those units will remain fixed.
 
