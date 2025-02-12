@@ -9,8 +9,8 @@ editor: visual
 
 ```{r}
 
-install.packages(c("sae","nlme","sf","terra","raster","mapview","dplyr",
-                   "tidyr","ggplot2","gridExtra","leaps","caret","car"))
+# install.packages(c("sae","nlme","sf","terra","raster","mapview","dplyr",
+#                  "tidyr","ggplot2","gridExtra","leaps","caret","car"))
 library("sae")
 library("nlme")
 library("sf")
