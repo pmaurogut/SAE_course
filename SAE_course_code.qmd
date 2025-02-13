@@ -322,7 +322,7 @@ abline(true_mean_stand4-0.1*true_mean_stand4,0,col="orange",lty=2)
 
 When comparing the sample mean to the regression estimator, we can observe that:
 
--   For the entire forest the regression estimator does much better for all sample sizes but the smallest one. This is because the relationship between volume and p95 can be approximated well by a linear function. The relationship, however, is not linear, it was created with the code spinet below, but this method does not rely on assuming that a linear relationship exists. That is why it provides unbiased estimates even for a case in which we know that the relationship between variable of interest and axiliary variable is not linear.
+-   For the entire forest the regression estimator does much better for all sample sizes but the smallest one. This is because the relationship between volume and p95 can be approximated well by a linear function. The relationship, however, is not linear, it was created with the code spinet below, but this method does not rely on assuming that a linear relationship exists. That is why it provides unbiased estimates even for a case in which we know that the relationship between variable of interest and auxiliary variable is not linear.
 
 -   For both methods variability for stands was larger and for small sample sizes variances were large.
 
