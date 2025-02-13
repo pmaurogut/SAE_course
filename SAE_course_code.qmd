@@ -586,7 +586,7 @@ Based on the true data generating process, we would expect differences of around
 
 **Our model does not account for stand effects that actually exist**
 
-[**We are not modeling stand effects. Our assumption of a pure linear relationship is worng.**]{.underline}
+[**We are not modeling stand effects. Our assumption of a pure linear relationship is wrong.**]{.underline}
 
 [**This type of modeling (assumption) is called synthetic, it assumes that a general model holds for all stands, but that might be wrong. That false assumption has important risks if stands are actually differentiated units. And chances are that there some differences, at the end, if someone draws a stand boundary it is probably because something looked different from the surrounding area.**]{.underline}
 
@@ -682,10 +682,16 @@ colnames(plots)[5] <- "QMD"
 plots_df <- st_drop_geometry(plots)
 
 stands <- st_read("Stands.gpkg")
-mapview(raster(population_aux_info[["P95"]]),legend=FALSE) + 
-  mapview(raster(population_aux_info[["SD_H"]]), legend=FALSE) + 
-  mapview(raster(population_aux_info[["ID_SMA"]]), legend=FALSE) + 
-  mapview(stands, legend=FALSE) + mapview(plots)  
+# mapview(raster(population_aux_info[["P95"]]),legend=FALSE) + 
+#   mapview(raster(population_aux_info[["SD_H"]]), legend=FALSE) + 
+#   mapview(raster(population_aux_info[["ID_SMA"]]), legend=FALSE) + 
+#   mapview(stands, legend=FALSE) + mapview(plots)  
+
+par(mfrow=c(2,2))
+plot(population_aux_info[["P95"]]) 
+plot(population_aux_info[["SD_H"]]) 
+plot(population_aux_info[["ID_SMA"]])
+plot(plots[,"ID_SMA"],add=TRUE,pch=20,col="red",cex=0.5)  
 ```
 
 Stand sample size and average sample size by stand
@@ -918,7 +924,9 @@ Let's see a use case of area level models. We are in a ponderosa pine dominated 
 plots<- read.csv("Plots_BMEF.csv")
 stands <- st_read("BMEF.gpkg",layer="stands")
 lidar <- rast("BMEF_Metrics.tif")
-mapview(lidar[["zq95"]]) + mapview(stands)
+# mapview(lidar[["zq95"]]) + mapview(stands)
+plot(lidar[["zq95"]])
+plot(stands,add=TRUE,col=rgb(1,0,0,0.25))
 plots
 ```
 
@@ -1029,7 +1037,10 @@ We recommend doing the last step manually or at least using some graphical summa
 plots<- st_read("BMEF.gpkg",layer="plots")
 stands <- st_read("BMEF.gpkg",layer="stands")
 lidar <- rast("BMEF_Metrics.tif")
-mapview(lidar[["zq95"]]) + mapview(stands) + mapview(plots)
+# mapview(lidar[["zq95"]]) + mapview(stands) + mapview(plots)
+plot(lidar[["zq95"]])
+plot(stands[,1],col=rgb(1,0,0,0.25),add=TRUE) 
+plot(plots[,1],add=TRUE,pch=20,col="blue")
 ```
 
 [**Step 1. Removal of highly correlated variables and variables with no variation**]{.underline}
