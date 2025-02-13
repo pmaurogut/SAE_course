@@ -843,6 +843,7 @@ result <- pbmseBHF(QMD ~ P95, dom = ID_SMA, selectdom=doms,
 To generate outputs that we can share with gis users we are going to merge all results in a data.frame. **Be aware that in the results the stand identifiers are renamed to "domain".**
 
 ```{r}
+eblups <- result$est$eblup
 mses <- result$mse
 mses$rmse <- sqrt(mses$mse)
 eblups_mse <- merge(eblups, mses, by = "domain")
@@ -1104,7 +1105,6 @@ for(i in 1:dim(summary_select$which)[1]){
 order_model<- summary_select$order[summary_select$vif<5]
 adjr2 <-adjr2[order_model]
 models_list <- models_list[order_model]
-plot()
 ```
 
 [**Step 3-b. Sort by adjusted r-squared and start testing manually.**]{.underline}
