@@ -1136,7 +1136,7 @@ selected_mixed2 <- lme(VOL~zmax + itot + ikurt + ipcumzq50 + p4th,
 summary(selected_mixed2)
 ```
 
-continue inspecting the list untill you find a suitable model
+continue inspecting the list until you find a suitable model
 
 # 7. References
 
